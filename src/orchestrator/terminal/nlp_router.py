@@ -280,14 +280,19 @@ class NLPRouter:
                 raw_text=text,
             )
 
-        # Evaluation & Comparison
-        if any(k in low for k in ["compare the models", "compare models", "which model is best", "evaluate models", "show evaluations", "selection report"]):
+        # Evaluation, Results & Comparison
+        if any(k in low for k in [
+            "result", "results", "show me the results", "show results", "get the result",
+            "evaluate", "evaluation", "how did the model perform", "how did it perform",
+            "metrics", "score", "scores", "performance", "compare", "winner", "selection report"
+        ]):
             return ParsedIntent(
                 intent="compare",
                 action_type="core_action",
                 args={},
                 raw_text=text,
             )
+
 
         # Error / Screenshot Explanation
         if any(k in low for k in ["explain this training error", "explain this error", "what is this error", "diagnose error"]):
