@@ -39,16 +39,34 @@ class CredentialStore:
         return {k: v for k, v in dotenv_values(path).items() if v}
 
     def kaggle(self) -> KaggleCredentials:
-        env = {**self._read_env_file("kaggle"), **os.environ}
+        env = {
+            **self._read_env_file("kaggle"),
+            **dotenv_values(".env"),
+            **os.environ,
+        }
         user = env.get("KAGGLE_USERNAME")
         key = env.get("KAGGLE_KEY")
+
+        if not user or not key:
+            # Check ~/.kaggle/kaggle.json or ./kaggle.json
+            import json
+            for json_path in [Path.home() / ".kaggle" / "kaggle.json", Path("kaggle.json")]:
+                if json_path.exists():
+                    try:
+                        data = json.loads(json_path.read_text(encoding="utf-8"))
+                        user = user or data.get("username")
+                        key = key or data.get("key")
+                    except Exception:
+                        pass
+
         if not user or not key:
             raise ConfigError(
                 "Missing Kaggle credentials. Set KAGGLE_USERNAME and KAGGLE_KEY in "
-                "environment or credentials/kaggle.env."
+                "environment, .env, credentials/kaggle.env, or ~/.kaggle/kaggle.json."
             )
         register_secrets([key])
         return KaggleCredentials(username=user, key=key)
+
 
     def hf_token(self) -> str | None:
         env = {**self._read_env_file("huggingface"), **os.environ}
