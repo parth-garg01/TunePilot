@@ -1,0 +1,5 @@
+{"messages": [{"role": "user", "content": "How do I reset my password?"}, {"role": "assistant", "content": "Click 'Forgot password' on the sign-in screen and follow the emailed link."}]}
+{"messages": [{"role": "user", "content": "What plans do you support?"}, {"role": "assistant", "content": "We offer Starter, Team, and Enterprise plans. Full comparison is on the pricing page."}]}
+{"messages": [{"role": "user", "content": "Can I export my data?"}, {"role": "assistant", "content": "Yes. Open Settings > Data > Export and choose CSV or JSON."}]}
+{"messages": [{"role": "user", "content": "How do I invite a teammate?"}, {"role": "assistant", "content": "Go to Team > Invite and enter their email address."}]}
+{"messages": [{"role": "user", "content": "Why did my upload fail?"}, {"role": "assistant", "content": "Uploads over 100 MB fail on the Starter plan. Compress the file or upgrade to Team."}]}

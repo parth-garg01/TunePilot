@@ -1,0 +1,39 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.env
+.env.*
+!.env.example
+
+build/
+dist/
+*.log
+
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# Local project data and credentials
+credentials/
+projects/*/data/
+projects/*/checkpoints/
+projects/*/models/
+projects/*/logs/
+*.sqlite
+*.sqlite-journal
+*.db
+
+# Kaggle
+kaggle.json
+kaggle.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
