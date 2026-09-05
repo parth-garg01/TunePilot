@@ -22,10 +22,11 @@ def print_banner(project_name: str, status: str = "Ready") -> None:
     panel = Panel(
         banner_text,
         border_style="cyan",
-        title="[bold green]⚡ September 5 Edition[/bold green]",
+        title="[bold green]⚡ TunePilot v1.0[/bold green]",
         subtitle=f"Project: [bold]{project_name}[/bold] | Status: [green]{status}[/green]",
     )
     console.print(panel)
+
 
 
 def print_welcome_back(project_name: str, active_jobs: list[dict[str, Any]]) -> None:
