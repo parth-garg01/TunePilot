@@ -184,8 +184,24 @@ class NLPRouter:
     def _parse_natural_language(self, text: str) -> ParsedIntent:
         low = text.lower()
 
+        # 0. Remote Dataset URLs (Kaggle & Hugging Face)
+        kaggle_match = re.search(r"https?://(?:www\.)?kaggle\.com/(?:code|datasets|competitions)/([a-zA-Z0-9_\-]+/[a-zA-Z0-9_\-]+|[a-zA-Z0-9_\-]+)", text, re.IGNORECASE)
+        hf_match = re.search(r"https?://(?:www\.)?huggingface\.co/(?:datasets/)?([a-zA-Z0-9_\-]+/[a-zA-Z0-9_\-]+)", text, re.IGNORECASE)
+
+        if kaggle_match or hf_match:
+            slug = kaggle_match.group(1) if kaggle_match else hf_match.group(1)
+            source = "kaggle" if kaggle_match else "huggingface"
+            has_train_intent = any(k in low for k in ["train", "strt", "start", "find", "model", "fine-tune", "finetune", "run"])
+            return ParsedIntent(
+                intent="dataset_discover_and_train" if has_train_intent else "dataset_analyze",
+                action_type="core_action",
+                args={"dataset_slug": slug, "source": source, "url": kaggle_match.group(0) if kaggle_match else hf_match.group(0)},
+                raw_text=text,
+                requires_confirmation=has_train_intent,
+            )
+
         # Dataset inspection
-        if any(k in low for k in ["analyze my dataset", "analyze the dataset", "analyze this", "inspect dataset", "validate dataset", "check dataset"]):
+        if any(k in low for k in ["analyze my dataset", "analyze the dataset", "analyze this", "inspect dataset", "validate dataset", "check dataset", "this is the dataset", "here is the dataset"]):
             path_match = re.search(r"([\w\-\./\\]+\.(?:jsonl|parquet|csv|tsv))", text)
             path = path_match.group(1) if path_match else "./data/train.jsonl"
             return ParsedIntent(
@@ -196,7 +212,7 @@ class NLPRouter:
             )
 
         # Model discovery & ranking
-        if any(k in low for k in ["find the best base models", "find the best models", "discover models", "find models", "rank models", "which model is ranked", "show models", "best 7b", "find 7b"]):
+        if any(k in low for k in ["find the best base models", "find the best models", "discover models", "find models", "find model", "rank models", "which model is ranked", "show models", "best 7b", "find 7b", "search models"]):
             size_match = re.search(r"(\d+[bB])", text)
             size_filter = size_match.group(1) if size_match else None
             quality_first = "don't care about training time" in low or "best model possible" in low or "quality" in low
@@ -217,8 +233,8 @@ class NLPRouter:
                 raw_text=text,
             )
 
-        # Training
-        if any(k in low for k in ["train the top", "train it", "start training", "train the candidates", "launch training", "fine-tune"]):
+        # Training (with flexible typo handling e.g. "strt trainig")
+        if any(k in low for k in ["train the top", "train it", "start training", "strt trainig", "strt training", "train the candidates", "launch training", "fine-tune", "finetune", "start train"]):
             count_match = re.search(r"top\s+(\d+|three|two|1|2|3)", low)
             count = 3
             if count_match:
@@ -227,6 +243,7 @@ class NLPRouter:
                 elif c_str in {"2", "two"}: count = 2
                 elif c_str in {"1", "one"}: count = 1
                 elif c_str.isdigit(): count = int(c_str)
+
 
             # Check if reference to single model ("train it")
             ref_model = self.context.resolve_model_reference(text)

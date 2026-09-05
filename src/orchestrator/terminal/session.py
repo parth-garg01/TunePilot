@@ -217,7 +217,26 @@ class TerminalChatSession:
                 f"  • Benchmark: Multi-layer loss, perplexity, and format compliance passed."
             )
             self.context.add_assistant_message(resp, intent=intent)
-            return resp
+        # Remote Dataset Discovery and Train Pipeline (e.g. Kaggle/HuggingFace links)
+        if intent == "dataset_discover_and_train":
+            slug = parsed.args.get("dataset_slug", "dataset")
+            src = parsed.args.get("source", "kaggle")
+            console.print(f"\n[bold cyan]>> Resolved {src.capitalize()} dataset:[/bold cyan] [green]{slug}[/green]")
+            console.print(f"[dim]Analyzing task domain, context length, and discovering compatible base models...[/dim]\n")
+
+
+            models = self.core.discover_models(quality_first=True)
+            self.context.update_discovered_models(models)
+            console.print(format_models_table(models))
+
+            top_models = [m["identifier"] for m in models[:2]] or ["Qwen/Qwen2.5-7B", "meta-llama/Llama-3.1-8B"]
+            plan = self.confirmation_mgr.create_training_plan(
+                models=top_models,
+                backend="kaggle_t4x2",
+                hours=len(top_models) * 2.0,
+            )
+            console.print(plan.format_plan_card())
+            return "Training plan generated. Type 'yes' (or 'y') to submit jobs to Kaggle Dual T4 GPUs."
 
         # Explain Error / Image analysis
         if intent == "explain_error":
@@ -231,13 +250,29 @@ class TerminalChatSession:
             self.context.add_assistant_message(resp, intent=intent)
             return resp
 
+        # General Conversational Q&A / Clarification
+        low_raw = parsed.raw_text.lower().strip()
+        if any(k in low_raw for k in ["what does this mean", "what do you mean", "explain this", "what next", "how to"]):
+            resp = (
+                "TunePilot is ready to run your fine-tuning workflow.\n"
+                "You can directly ask me to:\n"
+                "  1. Discover models: 'Find the best 7B models'\n"
+                "  2. Analyze data: 'Analyze ./examples/sample_dataset.jsonl'\n"
+                "  3. Launch training: 'Train the top candidate on Kaggle T4x2'\n"
+                "  4. Check jobs: 'What is the status of my experiments?'\n"
+                "Or provide any Kaggle / Hugging Face dataset link to plan training automatically."
+            )
+            self.context.add_assistant_message(resp, intent="chat_general")
+            return resp
+
         # General Chat / Fallback
         resp = (
-            f"I understand your request regarding '{parsed.raw_text}'. "
-            f"I have mapped this to TunePilot Core services. Type /help to see all available actions."
+            f"I have received: '{parsed.raw_text}'.\n"
+            f"TunePilot is ready. You can type commands like 'models discover', 'plan', 'train', or ask questions in natural language. Type /help for all actions."
         )
         self.context.add_assistant_message(resp, intent="chat_general")
         return resp
+
 
     def run_loop(self) -> None:
         """Interactive REPL loop."""

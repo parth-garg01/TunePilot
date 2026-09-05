@@ -41,23 +41,30 @@ class CredentialStore:
     def kaggle(self) -> KaggleCredentials:
         env = {
             **self._read_env_file("kaggle"),
-            **dotenv_values(".env"),
             **os.environ,
         }
+
+        # Check .env and ~/.kaggle only if default root is used
+        if self.root == Path("credentials"):
+            env = {**dotenv_values(".env"), **env}
+            user = env.get("KAGGLE_USERNAME")
+            key = env.get("KAGGLE_KEY")
+
+            if not user or not key:
+                import json
+                for json_path in [Path.home() / ".kaggle" / "kaggle.json", Path("kaggle.json")]:
+                    if json_path.exists():
+                        try:
+                            data = json.loads(json_path.read_text(encoding="utf-8"))
+                            user = user or data.get("username")
+                            key = key or data.get("key")
+                        except Exception:
+                            pass
+                env["KAGGLE_USERNAME"] = user or ""
+                env["KAGGLE_KEY"] = key or ""
+
         user = env.get("KAGGLE_USERNAME")
         key = env.get("KAGGLE_KEY")
-
-        if not user or not key:
-            # Check ~/.kaggle/kaggle.json or ./kaggle.json
-            import json
-            for json_path in [Path.home() / ".kaggle" / "kaggle.json", Path("kaggle.json")]:
-                if json_path.exists():
-                    try:
-                        data = json.loads(json_path.read_text(encoding="utf-8"))
-                        user = user or data.get("username")
-                        key = key or data.get("key")
-                    except Exception:
-                        pass
 
         if not user or not key:
             raise ConfigError(
@@ -66,6 +73,7 @@ class CredentialStore:
             )
         register_secrets([key])
         return KaggleCredentials(username=user, key=key)
+
 
 
     def hf_token(self) -> str | None:
