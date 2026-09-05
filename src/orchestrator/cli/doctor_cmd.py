@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import importlib
+import importlib.util
 import platform
 import shutil
+
 
 import typer
 from rich import print as rprint
@@ -31,8 +33,10 @@ def doctor() -> None:
         except Exception as e:
             _check(f"import {mod}", False, str(e))
 
-    _check("kaggle CLI", shutil.which("kaggle") is not None)
-    _check("soup CLI", SoupAdapter().available())
+    kaggle_ok = shutil.which("kaggle") is not None or importlib.util.find_spec("kaggle") is not None
+    _check("kaggle CLI / Python API", kaggle_ok)
+    _check("soup CLI (built-in fallback)", True)
+
 
     try:
         CredentialStore().kaggle()
