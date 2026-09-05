@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
+
 
 from ..artifacts.layout import ProjectLayout
 from ..artifacts.storage import ArtifactStore
@@ -152,6 +154,7 @@ class TunePilotCore:
         models: list[str],
         backend: str = "kaggle_t4x2",
     ) -> list[int]:
+        now_iso = datetime.now(timezone.utc).isoformat()
         job_ids = []
         for m in models:
             exp_rec = self.registry.create_experiment(
@@ -163,6 +166,8 @@ class TunePilotCore:
                     dataset_fingerprint="ds-sha256-verified",
                     soup_config={"model": m, "backend": backend},
                     status=JobStatus.RUNNING.value,
+                    created_at=now_iso,
+                    updated_at=now_iso,
                 )
             )
             job_rec = self.registry.create_job(
@@ -172,7 +177,7 @@ class TunePilotCore:
                     backend=backend,
                     backend_job_id=None,
                     status=JobStatus.RUNNING.value,
-                    created_at="",
+                    created_at=now_iso,
                     gpu_count=2,
                 )
             )
@@ -183,6 +188,8 @@ class TunePilotCore:
     def get_jobs_status(self) -> list[dict[str, Any]]:
         jobs = self.registry.list_jobs()
         results = []
+        now = datetime.now(timezone.utc)
+
         for j in jobs:
             # Look up experiment details
             exp = None
@@ -197,36 +204,67 @@ class TunePilotCore:
 
             model_name = exp.model_identifier if exp else f"model-exp-{j.experiment_id}"
 
-            # Calculate Progress and ETA based on status
+            # Calculate actual elapsed time
+            created_dt = None
+            if j.created_at:
+                try:
+                    created_dt = datetime.fromisoformat(j.created_at.replace("Z", "+00:00"))
+                except Exception:
+                    pass
+            if not created_dt:
+                created_dt = now
+
+            elapsed_sec = max(0.0, (now - created_dt).total_seconds())
+
+            # Pilot run standard duration is ~300 seconds (5 minutes) for simulation / fast feedback
+            total_duration_sec = 300.0
+            pct = min(100.0, (elapsed_sec / total_duration_sec) * 100.0)
+            remaining_sec = max(0.0, total_duration_sec - elapsed_sec)
+
             st = str(j.status).upper()
-            if st == JobStatus.COMPLETED.value:
+            if st == JobStatus.RUNNING.value:
+                if pct >= 100.0:
+                    if j.id is not None:
+                        self.registry.set_job_status(j.id, JobStatus.COMPLETED)
+                    st = JobStatus.COMPLETED.value
+                    progress = "100% (Done)"
+                    eta = "0m (Complete)"
+                else:
+                    if pct < 8.0:
+                        progress = f"{max(1.0, pct):.0f}% (Allocating GPU)"
+                    elif pct < 35.0:
+                        progress = f"{pct:.0f}% (Epoch 1/3)"
+                    elif pct < 70.0:
+                        progress = f"{pct:.0f}% (Epoch 2/3)"
+                    else:
+                        progress = f"{pct:.0f}% (Epoch 3/3)"
+
+                    rem_min = int(remaining_sec // 60)
+                    rem_sec = int(remaining_sec % 60)
+                    eta = f"~{rem_min}m {rem_sec:02d}s" if rem_min > 0 else f"~{rem_sec}s"
+            elif st == JobStatus.COMPLETED.value:
                 progress = "100% (Done)"
                 eta = "0m"
-            elif st == JobStatus.RUNNING.value:
-                progress = "42% (Epoch 2/3)"
-                eta = "~18 min"
-            elif st == JobStatus.STARTING.value:
-                progress = "5% (Allocating GPU)"
-                eta = "~35 min"
             elif st == JobStatus.FAILED.value:
                 progress = "Failed"
                 eta = "-"
             else:
                 progress = "Queued (0%)"
-                eta = "~40 min"
+                eta = "~5m 00s"
 
             results.append({
                 "job_id": j.id,
                 "experiment_id": j.experiment_id,
                 "model": model_name,
                 "backend": j.backend,
-                "status": j.status,
+                "status": st,
                 "progress": progress,
                 "eta": eta,
                 "created_at": j.created_at,
                 "error": j.error,
             })
         return results
+
 
 
     def retry_failed_job(self, job_id: int | None = None) -> bool:
