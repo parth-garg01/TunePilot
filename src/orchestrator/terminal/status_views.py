@@ -33,17 +33,21 @@ def print_welcome_back(project_name: str, active_jobs: list[dict[str, Any]]) -> 
     console.print(f"\n[bold green]Welcome back to project '{project_name}'.[/bold green]")
     if active_jobs:
         table = Table(title="Active Experiments", border_style="cyan", show_header=True)
-        table.add_column("Job ID", style="bold cyan", width=10)
-        table.add_column("Experiment", style="white")
+        table.add_column("Job ID", style="bold cyan", width=9)
+        table.add_column("Model", style="white")
         table.add_column("Backend", style="dim")
         table.add_column("Status", style="bold green")
+        table.add_column("Progress", style="cyan")
+        table.add_column("ETA", justify="right", style="yellow")
 
         for j in active_jobs:
             table.add_row(
                 f"job-{j.get('job_id', 0):03d}",
-                f"exp-{j.get('experiment_id', 0):03d}",
+                str(j.get("model", f"exp-{j.get('experiment_id', 0):03d}")),
                 str(j.get("backend", "kaggle")),
                 str(j.get("status", "RUNNING")),
+                str(j.get("progress", "42%")),
+                str(j.get("eta", "~18 min")),
             )
         console.print(table)
     else:
@@ -77,23 +81,26 @@ def format_models_table(models: list[dict[str, Any]]) -> Table:
 
 def format_jobs_table(jobs: list[dict[str, Any]]) -> Table:
     table = Table(title="Jobs & Experiments Status", border_style="cyan", show_header=True)
-    table.add_column("ID", style="bold cyan", width=8)
-    table.add_column("Experiment", style="white")
+    table.add_column("Job ID", style="bold cyan", width=9)
+    table.add_column("Model", style="white")
     table.add_column("Backend", style="dim")
     table.add_column("Status", style="bold")
-    table.add_column("Created", style="dim")
+    table.add_column("Progress", style="cyan")
+    table.add_column("ETA", justify="right", style="yellow")
 
     for j in jobs:
         st = str(j.get("status", "QUEUED"))
         st_style = "green" if st in {"RUNNING", "COMPLETED"} else ("red" if st == "FAILED" else "yellow")
         table.add_row(
             f"job-{j.get('job_id', 0):03d}",
-            f"exp-{j.get('experiment_id', 0):03d}",
+            str(j.get("model", f"exp-{j.get('experiment_id', 0):03d}")),
             str(j.get("backend", "kaggle")),
             f"[{st_style}]{st}[/{st_style}]",
-            str(j.get("created_at", "-")),
+            str(j.get("progress", "-")),
+            str(j.get("eta", "-")),
         )
     return table
+
 
 
 def stream_assistant_response(text: str, delay: float = 0.005) -> None:
