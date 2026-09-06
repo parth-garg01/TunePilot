@@ -147,7 +147,7 @@ class AttachmentManager:
         lines = ["\n[bold cyan]Attachments[/bold cyan]"]
         for a in attachments:
             if a.error:
-                lines.append(f"  [red]✗[/red] {a.name:<20} [red]{a.error}[/red]")
+                lines.append(f"  [red][FAIL][/red] {a.name:<20} [red]{a.error}[/red]")
             else:
                 extra = ""
                 if a.is_image:
@@ -155,7 +155,8 @@ class AttachmentManager:
                         extra = " [green](Vision Enabled)[/green]"
                     else:
                         extra = " [yellow](Image Metadata Mode)[/yellow]"
-                lines.append(f"  [green]✓[/green] {a.name:<24} [dim]{a.human_size:>9}[/dim]{extra}")
+                lines.append(f"  [green][OK][/green] {a.name:<24} [dim]{a.human_size:>9}[/dim]{extra}")
+
 
         lines.append("[dim]Ready to analyze.[/dim]\n")
         return "\n".join(lines)

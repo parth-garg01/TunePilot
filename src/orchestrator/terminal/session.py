@@ -77,10 +77,11 @@ class TerminalChatSession:
                     models_to_train = plan.models if plan else ["Qwen/Qwen2.5-7B"]
                     job_ids = self.core.launch_training(models=models_to_train)
                     resp = (
-                        f"✓ Experiment plan confirmed.\n"
-                        f"✓ {len(job_ids)} jobs submitted to cloud compute.\n\n"
+                        f"[OK] Experiment plan confirmed.\n"
+                        f"[OK] {len(job_ids)} jobs submitted to cloud compute.\n\n"
                         f"Active jobs:\n" + "\n".join(f"  exp-{jid:03d}  RUNNING" for jid in job_ids)
                     )
+
                     self.context.add_assistant_message(resp, intent="train_confirmed")
                     return resp
                 elif status == "cancelled":
