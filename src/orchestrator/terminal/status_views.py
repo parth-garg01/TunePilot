@@ -215,10 +215,28 @@ def format_clinical_preprocessing_table(report: dict[str, Any]) -> Table:
         "[bold yellow]TOTAL PATIENT BIOMARKER VECTOR[/bold yellow]",
         "[bold cyan]314 features[/bold cyan]",
         "[bold cyan]314 features[/bold cyan]",
-        "[bold green]628 features[/bold green]",
-        "[bold magenta]Boosts accuracy: 88.5% -> 94.8%![/bold magenta]"
+        "[bold magenta]Boosts accuracy: 88.5% -> 94.8%![/bold magenta]",
     )
     return table
+
+
+
+def format_adaptive_preprocessing_table(report: dict[str, Any]) -> Table:
+    domain_title = report.get("detected_domain", "Domain").replace("_", " ").upper()
+    table = Table(title=f"Adaptive Domain-Specific Preprocessing Pipeline [{domain_title}]", border_style="cyan", show_header=True)
+    table.add_column("Pipeline Step / Technique", style="bold white")
+    table.add_column("Applied Domain Specification", style="cyan")
+
+    steps = report.get("preprocessing_steps", [])
+    recipe = report.get("applied_recipe", "General")
+    for s in steps:
+        parts = s.split(". ", 1)
+        step_num = parts[0] + "." if len(parts) > 1 else "•"
+        desc = parts[1] if len(parts) > 1 else s
+        table.add_row(step_num, desc)
+
+    return table
+
 
 
 

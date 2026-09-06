@@ -337,6 +337,20 @@ class TunePilotCore:
             "optimal_thresholds": res.optimal_thresholds,
         }
 
+    def preprocess_dataset_adaptively(self, dataset_path: str = "./data/train.jsonl", hint: str = "") -> dict[str, Any]:
+        from ..dataset.adaptive_preprocessor import DynamicDomainPreprocessor
+        preprocessor = DynamicDomainPreprocessor(output_dir=self.layout.project_dir / "preprocessed")
+        report = preprocessor.process(dataset_path=dataset_path, content_hint=hint)
+        return {
+            "dataset_path": report.dataset_path,
+            "detected_domain": report.detected_domain.value,
+            "applied_recipe": report.applied_recipe,
+            "preprocessing_steps": report.preprocessing_steps,
+            "features_generated": report.features_generated,
+            "output_path": report.output_path,
+            "accuracy_impact": report.accuracy_impact,
+        }
+
     def preprocess_clinical_dataset(self, dataset_path: str = "./data/train.jsonl") -> dict[str, Any]:
         from ..dataset.multimodal_preprocessor import MultimodalPreprocessor
         preprocessor = MultimodalPreprocessor(output_dir=self.layout.project_dir / "preprocessed")
@@ -354,6 +368,7 @@ class TunePilotCore:
             "gain_pct": report.gain_pct,
             "breakdown": report.feature_breakdown,
         }
+
 
     def generate_competition_submissions(self) -> dict[str, Any]:
         from ..evaluation.submission_package import SubmissionPackageGenerator

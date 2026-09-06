@@ -23,6 +23,7 @@ from .help_system import get_help_panel
 from .nlp_router import NLPRouter, ParsedIntent
 from .status_views import (
     console,
+    format_adaptive_preprocessing_table,
     format_clinical_preprocessing_table,
     format_ensemble_table,
     format_evaluation_table,
@@ -34,6 +35,7 @@ from .status_views import (
     print_welcome_back,
     stream_assistant_response,
 )
+
 
 
 
@@ -147,21 +149,34 @@ class TerminalChatSession:
                 f"  • Format: {report.get('format', 'messages[]')}\n"
                 f"Ready to discover base models."
             )
-        # Clinical Multimodal Feature Preprocessing (628-D LBP, GLCM, Vessels, Lesions)
+        # Domain-Adaptive Dataset Preprocessing & Feature Engineering
         if intent == "clinical_preprocessing":
             path = parsed.args.get("path") or "./data/train.jsonl"
-            report = self.core.preprocess_clinical_dataset(dataset_path=path)
-            console.print(format_clinical_preprocessing_table(report))
-            resp = (
-                f"Clinical Preprocessing Complete (628-D Biometric Feature Fusion):\n"
-                f"  • Left Eye Features: {report['left_eye_features']} dims (LBP, GLCM, RGB, Vessels, Optic Disc, Lesions)\n"
-                f"  • Right Eye Features: {report['right_eye_features']} dims\n"
-                f"  • Total Fused Vector: {report['features_per_sample']} dimensions per patient sample\n"
-                f"  • Preprocessed Dataset: {report['preprocessed_path']}\n"
-                f"  • Accuracy Boost: {report['raw_score']:.1f}% -> {report['boosted_score']:.2f}% (Outperforms pure XGBoost 92.0115%!)"
-            )
+            raw_text = parsed.raw_text.lower()
+            if any(k in raw_text for k in ["lbp", "glcm", "vessel", "optic disc", "lesion", "fundus", "retina", "eye", "628"]):
+                report = self.core.preprocess_clinical_dataset(dataset_path=path)
+                console.print(format_clinical_preprocessing_table(report))
+                resp = (
+                    f"Clinical Preprocessing Complete (628-D Biometric Feature Fusion):\n"
+                    f"  • Left Eye Features: {report['left_eye_features']} dims (LBP, GLCM, RGB, Vessels, Optic Disc, Lesions)\n"
+                    f"  • Right Eye Features: {report['right_eye_features']} dims\n"
+                    f"  • Total Fused Vector: {report['features_per_sample']} dimensions per patient sample\n"
+                    f"  • Preprocessed Dataset: {report['preprocessed_path']}\n"
+                    f"  • Accuracy Boost: {report['raw_score']:.1f}% -> {report['boosted_score']:.2f}% (Outperforms pure XGBoost 92.0115%!)"
+                )
+            else:
+                adap = self.core.preprocess_dataset_adaptively(dataset_path=path, hint=parsed.raw_text)
+                console.print(format_adaptive_preprocessing_table(adap))
+                resp = (
+                    f"Domain-Adaptive Preprocessing Applied [{adap['detected_domain'].upper()}]:\n"
+                    f"  • Recipe: {adap['applied_recipe']}\n"
+                    f"  • Custom Steps: {len(adap['preprocessing_steps'])} domain transformations applied.\n"
+                    f"  • Output Dataset: {adap['output_path']}\n"
+                    f"  • Expected Impact: {adap['accuracy_impact']}"
+                )
             self.context.add_assistant_message(resp, intent=intent)
             return resp
+
 
         # Models Discover / List
         if intent in {"models_discover", "models_list"}:
