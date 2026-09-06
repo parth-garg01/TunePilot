@@ -303,6 +303,24 @@ class NLPRouter:
                 raw_text=text,
             )
 
+        # Ensemble & Model Soups (Kaggle Winning Strategy)
+        if any(k in low for k in ["ensemble", "blend", "model soup", "model blend", "create ensemble", "winning strategy", "stacking"]):
+            return ParsedIntent(
+                intent="ensemble",
+                action_type="core_action",
+                args={},
+                raw_text=text,
+            )
+
+        # Cross Validation (K-Fold)
+        if any(k in low for k in ["cross validation", "k-fold", "kfold", "5-fold", "stratified fold"]):
+            return ParsedIntent(
+                intent="cross_validation",
+                action_type="core_action",
+                args={},
+                raw_text=text,
+            )
+
         # Export
         if any(k in low for k in ["export winning model", "export model", "quantize and export", "save model"]):
             return ParsedIntent(
@@ -311,6 +329,7 @@ class NLPRouter:
                 args={},
                 raw_text=text,
             )
+
 
         # General question or chat
         return ParsedIntent(

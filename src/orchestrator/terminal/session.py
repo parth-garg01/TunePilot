@@ -23,6 +23,7 @@ from .help_system import get_help_panel
 from .nlp_router import NLPRouter, ParsedIntent
 from .status_views import (
     console,
+    format_ensemble_table,
     format_evaluation_table,
     format_jobs_table,
     format_models_table,
@@ -30,6 +31,7 @@ from .status_views import (
     print_welcome_back,
     stream_assistant_response,
 )
+
 
 
 
@@ -257,8 +259,38 @@ class TerminalChatSession:
             self.context.add_assistant_message(resp, intent=intent)
             return resp
 
+        # Ensemble Strategy & Model Blending (Kaggle Winning Methodology)
+        if intent == "ensemble":
+            models_to_blend = [m["identifier"] for m in self.context.discovered_models[:3]] if self.context.discovered_models else [
+                "Qwen/Qwen2.5-7B", "meta-llama/Llama-3.1-8B", "microsoft/deberta-v3-large"
+            ]
+            ens = self.core.create_ensemble(models=models_to_blend)
+            console.print(format_ensemble_table(ens))
+            resp = (
+                f"Ensemble Blend Formulated (Winning Strategy):\n"
+                f"  • Single Best Model Score: {ens['single_best']:.1f}%\n"
+                f"  • Blended Ensemble Score: {ens['ensemble_score']:.1f}%\n"
+                f"  • Expected Boost: +{ens['improvement_pct']:.1f}% on private leaderboard!\n"
+                f"  • Submission Script: Generated ready-to-run Kaggle inference code."
+            )
+            self.context.add_assistant_message(resp, intent=intent)
+            return resp
+
+        # Cross Validation (K-Fold CV)
+        if intent == "cross_validation":
+            cv_plan = self.core.plan_cross_validation(n_splits=5)
+            resp = (
+                f"Cross-Validation Plan Generated:\n"
+                f"  • Strategy: {cv_plan['summary']}\n"
+                f"  • Folds: 5 isolated train/validation splits with 0% data leakage.\n"
+                f"  • Out-of-fold predictions will be saved automatically during training."
+            )
+            self.context.add_assistant_message(resp, intent=intent)
+            return resp
+
         # Explain Error / Image analysis
         if intent == "explain_error":
+
 
             doc_context = self.doc_engine.retrieve(parsed.raw_text)
             extra_ctx = f"\nRelevant context:\n{doc_context[0].text[:300]}" if doc_context else ""

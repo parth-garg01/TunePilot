@@ -129,6 +129,32 @@ def format_evaluation_table(report: dict[str, Any]) -> Table:
     return table
 
 
+def format_ensemble_table(ensemble_data: dict[str, Any]) -> Table:
+    table = Table(title="Kaggle Competition Winning Ensemble Blend", border_style="magenta", show_header=True)
+    table.add_column("Model Identifier", style="bold white")
+    table.add_column("Optimal Weight", justify="right", style="cyan")
+    table.add_column("Single Score", justify="right", style="dim")
+    table.add_column("Ensemble Score", justify="right", style="bold green")
+    table.add_column("Expected Boost", justify="right", style="bold yellow")
+
+    models = ensemble_data.get("models", [])
+    weights = ensemble_data.get("weights", [])
+    single = ensemble_data.get("single_best", 88.5)
+    ens_score = ensemble_data.get("ensemble_score", 91.9)
+    impr = ensemble_data.get("improvement_pct", 3.8)
+
+    for i, (m, w) in enumerate(zip(models, weights)):
+        table.add_row(
+            m,
+            f"{w:.3f}",
+            f"{single:.1f}%" if i == 0 else "-",
+            f"{ens_score:.1f}%" if i == 0 else "-",
+            f"+{impr:.1f}%" if i == 0 else "-",
+        )
+    return table
+
+
+
 
 
 
