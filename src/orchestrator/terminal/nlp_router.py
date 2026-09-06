@@ -200,6 +200,20 @@ class NLPRouter:
                 requires_confirmation=has_train_intent,
             )
 
+        # Domain-Specific Clinical & Medical Feature Preprocessing (628-D LBP, GLCM, CLAHE, Vessels, Lesions)
+        if any(k in low for k in [
+            "lbp", "glcm", "vessel", "vessels", "optic disc", "lesion", "handcrafted", "preprocessing",
+            "preprocess", "biomarker", "628", "feature extraction", "feature engineering", "xgboost"
+        ]):
+            path_match = re.search(r"([\w\-\./\\]+\.(?:jsonl|parquet|csv|tsv))", text)
+            path = path_match.group(1) if path_match else "./data/train.jsonl"
+            return ParsedIntent(
+                intent="clinical_preprocessing",
+                action_type="core_action",
+                args={"path": path},
+                raw_text=text,
+            )
+
         # Dataset inspection
         if any(k in low for k in ["analyze my dataset", "analyze the dataset", "analyze this", "inspect dataset", "validate dataset", "check dataset", "this is the dataset", "here is the dataset"]):
             path_match = re.search(r"([\w\-\./\\]+\.(?:jsonl|parquet|csv|tsv))", text)
@@ -210,6 +224,7 @@ class NLPRouter:
                 args={"path": path},
                 raw_text=text,
             )
+
 
         # Model discovery & ranking
         if any(k in low for k in ["find the best base models", "find the best models", "discover models", "find models", "find model", "rank models", "which model is ranked", "show models", "best 7b", "find 7b", "search models"]):

@@ -337,6 +337,24 @@ class TunePilotCore:
             "optimal_thresholds": res.optimal_thresholds,
         }
 
+    def preprocess_clinical_dataset(self, dataset_path: str = "./data/train.jsonl") -> dict[str, Any]:
+        from ..dataset.multimodal_preprocessor import MultimodalPreprocessor
+        preprocessor = MultimodalPreprocessor(output_dir=self.layout.project_dir / "preprocessed")
+        report = preprocessor.preprocess_dataset(dataset_path=dataset_path)
+
+        return {
+            "original_path": report.original_dataset_path,
+            "preprocessed_path": report.preprocessed_dataset_path,
+            "samples_count": report.samples_count,
+            "features_per_sample": report.features_extracted_per_sample,
+            "left_eye_features": report.left_eye_features,
+            "right_eye_features": report.right_eye_features,
+            "raw_score": report.baseline_raw_score,
+            "boosted_score": report.handcrafted_boosted_score,
+            "gain_pct": report.gain_pct,
+            "breakdown": report.feature_breakdown,
+        }
+
     def generate_competition_submissions(self) -> dict[str, Any]:
         from ..evaluation.submission_package import SubmissionPackageGenerator
         gen = SubmissionPackageGenerator(project_name=self.project_name, root=self.root)
@@ -352,7 +370,9 @@ class TunePilotCore:
         }
 
     def close(self) -> None:
+
         self.registry.close()
+
 
 
 
