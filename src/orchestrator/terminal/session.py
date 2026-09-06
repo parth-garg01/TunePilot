@@ -27,10 +27,13 @@ from .status_views import (
     format_evaluation_table,
     format_jobs_table,
     format_models_table,
+    format_post_processing_table,
+    format_submissions_table,
     print_banner,
     print_welcome_back,
     stream_assistant_response,
 )
+
 
 
 
@@ -277,17 +280,34 @@ class TerminalChatSession:
             self.context.add_assistant_message(resp, intent=intent)
             return resp
 
-        # Cross Validation (K-Fold CV)
-        if intent == "cross_validation":
-            cv_plan = self.core.plan_cross_validation(n_splits=5)
+        # Metric Post-Processing & Threshold Optimization
+        if intent == "post_processing":
+            metric = parsed.args.get("metric", "qwk")
+            pp = self.core.optimize_thresholds(metric=metric)
+            console.print(format_post_processing_table(pp))
             resp = (
-                f"Cross-Validation Plan Generated:\n"
-                f"  • Strategy: {cv_plan['summary']}\n"
-                f"  • Folds: 5 isolated train/validation splits with 0% data leakage.\n"
-                f"  • Out-of-fold predictions will be saved automatically during training."
+                f"Metric Post-Processing Complete:\n"
+                f"  • Metric: {pp['metric_name']}\n"
+                f"  • Baseline Score: {pp['baseline_score']:.4f}\n"
+                f"  • Post-Processed Score: {pp['optimized_score']:.4f} (+{pp['improvement']:.4f} gain!)\n"
+                f"  • Calibrated Thresholds: {pp['optimal_thresholds']}"
             )
             self.context.add_assistant_message(resp, intent=intent)
             return resp
+
+        # Dual Competition Submissions Strategy
+        if intent == "submission_package":
+            pkg = self.core.generate_competition_submissions()
+            console.print(format_submissions_table(pkg))
+            resp = (
+                f"Dual Kaggle Submissions Prepared Successfully:\n"
+                f"  • Submission #1 (Single Champion): {pkg['single_submission_path']}\n"
+                f"  • Submission #2 (Gold Ensemble): {pkg['ensemble_submission_path']}\n"
+                f"  • Ready for submission: '{pkg['submission_cli_command']}'"
+            )
+            self.context.add_assistant_message(resp, intent=intent)
+            return resp
+
 
         # Explain Error / Image analysis
         if intent == "explain_error":

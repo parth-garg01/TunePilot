@@ -311,6 +311,7 @@ class TunePilotCore:
         }
 
     def plan_cross_validation(self, total_samples: int = 5000, n_splits: int = 5) -> dict[str, Any]:
+
         from ..planning.cross_validation import CrossValidationPlanner
         planner = CrossValidationPlanner(n_splits=n_splits)
         plan = planner.plan_splits(total_samples)
@@ -320,7 +321,38 @@ class TunePilotCore:
             "splits": [{"fold": s.fold_idx, "train": s.train_count, "val": s.val_count} for s in plan.splits],
         }
 
+    def optimize_thresholds(self, metric: str = "qwk") -> dict[str, Any]:
+
+        from ..evaluation.post_processing import MetricPostProcessor
+        processor = MetricPostProcessor(metric=metric)
+        # Synthetic OOF distribution for threshold calibration
+        oof_preds = [1.2, 2.8, 3.1, 4.2, 0.9, 2.1, 3.9, 4.8, 1.1, 2.9]
+        ground_truth = [1, 3, 3, 4, 1, 2, 4, 5, 1, 3]
+        res = processor.optimize_qwk_thresholds(oof_preds, ground_truth)
+        return {
+            "metric_name": res.metric_name,
+            "baseline_score": res.baseline_score,
+            "optimized_score": res.optimized_score,
+            "improvement": res.improvement,
+            "optimal_thresholds": res.optimal_thresholds,
+        }
+
+    def generate_competition_submissions(self) -> dict[str, Any]:
+        from ..evaluation.submission_package import SubmissionPackageGenerator
+        gen = SubmissionPackageGenerator(project_name=self.project_name, root=self.root)
+        pkg = gen.generate_packages()
+        return {
+            "single_model": pkg.single_model,
+            "ensemble_models": pkg.ensemble_models,
+            "ensemble_weights": pkg.ensemble_weights,
+            "optimal_thresholds": pkg.optimal_thresholds,
+            "single_submission_path": pkg.single_submission_path,
+            "ensemble_submission_path": pkg.ensemble_submission_path,
+            "submission_cli_command": pkg.submission_cli_command,
+        }
+
     def close(self) -> None:
         self.registry.close()
+
 
 

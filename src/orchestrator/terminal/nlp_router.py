@@ -312,10 +312,19 @@ class NLPRouter:
                 raw_text=text,
             )
 
-        # Cross Validation (K-Fold)
-        if any(k in low for k in ["cross validation", "k-fold", "kfold", "5-fold", "stratified fold"]):
+        # Metric Post-Processing & Threshold Optimization
+        if any(k in low for k in ["post-processing", "post processing", "threshold", "optimize threshold", "qwk", "mcrmse", "metric optimization"]):
             return ParsedIntent(
-                intent="cross_validation",
+                intent="post_processing",
+                action_type="core_action",
+                args={"metric": "qwk" if "qwk" in low else ("mcrmse" if "mcrmse" in low else "qwk")},
+                raw_text=text,
+            )
+
+        # Dual Competition Submissions Strategy
+        if any(k in low for k in ["submit both", "dual submission", "competition submission", "generate submission", "submission package", "prepare submission"]):
+            return ParsedIntent(
+                intent="submission_package",
                 action_type="core_action",
                 args={},
                 raw_text=text,
@@ -329,6 +338,7 @@ class NLPRouter:
                 args={},
                 raw_text=text,
             )
+
 
 
         # General question or chat

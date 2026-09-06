@@ -155,6 +155,48 @@ def format_ensemble_table(ensemble_data: dict[str, Any]) -> Table:
 
 
 
+def format_post_processing_table(pp_data: dict[str, Any]) -> Table:
+    table = Table(title="Out-of-Fold (OOF) Metric Post-Processing & Threshold Optimization", border_style="green", show_header=True)
+    table.add_column("Competition Metric", style="bold white")
+    table.add_column("Baseline OOF", justify="right", style="dim")
+    table.add_column("Post-Processed OOF", justify="right", style="bold green")
+    table.add_column("Net Metric Gain", justify="right", style="bold yellow")
+    table.add_column("Optimal Decision Thresholds", style="cyan")
+
+    table.add_row(
+        pp_data.get("metric_name", "QWK"),
+        f"{pp_data.get('baseline_score', 0.812):.4f}",
+        f"{pp_data.get('optimized_score', 0.864):.4f}",
+        f"+{pp_data.get('improvement', 0.052):.4f}",
+        str(pp_data.get("optimal_thresholds", [])),
+    )
+    return table
+
+
+def format_submissions_table(sub_data: dict[str, Any]) -> Table:
+    table = Table(title="Final Dual Kaggle Submission Strategy (Public & Private Hedge)", border_style="gold1", show_header=True)
+    table.add_column("Submission Slot", style="bold yellow", width=15)
+    table.add_column("Strategy & Architecture", style="bold white")
+    table.add_column("Purpose", style="dim")
+    table.add_column("Generated File Path", style="cyan")
+
+    table.add_row(
+        "Submission #1",
+        f"Single Champion ({sub_data.get('single_model', 'Qwen/Qwen2.5-7B')})",
+        "Public Leaderboard Anchor & High Precision Baseline",
+        sub_data.get("single_submission_path", "submissions/submission_1.py"),
+    )
+    table.add_row(
+        "Submission #2",
+        f"Gold-Medal 3-Model Ensemble + Post-Processed Thresholds",
+        "Private Leaderboard Shield & Final Shakeup Winner",
+        sub_data.get("ensemble_submission_path", "submissions/submission_2.py"),
+    )
+    return table
+
+
+
+
 
 
 
